@@ -49,15 +49,8 @@ int pwd(char* args[])
 }
 int echo(char* args[])
 {
-	
 	for(int i=1;args[i]!=NULL;i++)
-	{
-		if(args[i][0]!='$')
-			printf("%s ",args[i]);
-		else //if(getenv(&args[i][1]))
-			printf("$%s=%s ",&args[i][1],getenv(&args[i][1]));
-	
-	}
+		printf("%s ",args[i]);
 	printf("\n");
 	return 0;
 }

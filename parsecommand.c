@@ -2,7 +2,7 @@
 #include<string.h>
 #include<stdlib.h>
 #include"shell.h"
-int parsecommand(char* command,char* args[],char *inputredir, char* outputredir, int* isappend)
+int parsecommand(char* command,char* args[])
 {
 	// parse the command into args such that all tabs, new lines and spaces are ignored whenever there isn't any "
 	char* delimiter=" \t\r\n\a\'\"";
@@ -11,40 +11,18 @@ int parsecommand(char* command,char* args[],char *inputredir, char* outputredir,
 	arg=strtok(command,delimiter);
 	args[i]=(char*)malloc(LIMIT*sizeof(char));
 	strcpy(args[i],arg);
-	int flag=0;
-	for(i=0;arg!=NULL;)
+
+	for(i=1;args[i-1]!=NULL;i++)
 	{
-		i++;
 		arg=strtok(NULL,delimiter);
-		if(arg&&strcmp(arg,"<")==0)
-		{
-			flag=1;	
-		}
-		else if(arg&&strcmp(arg,">")==0)
-		{
-			flag=2;
-			*isappend=0;
-		}
-		else if(arg&&strcmp(arg,">>")==0)
-		{
-			flag=2;
-			*isappend=1;
-		}
-		else if(arg&&flag==2)
-		{
-			strcpy(outputredir,arg);
-		}
-		else if(arg && flag==1)
-		{
-			strcpy(inputredir,arg);
-		}
-		else if(arg &&flag==0)
+		if(arg)
 		{
 			args[i]=(char*)malloc(LIMIT*sizeof(char));
 			strcpy(args[i],arg);
 		}
 	}
-	args[i]=NULL;
+	args[i-1]=NULL;
 	free(arg);
-	return i;
+	return i-1;
 }
+

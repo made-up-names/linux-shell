@@ -30,9 +30,8 @@ int remindme(int argc,char* args[])
 		for(int i=2;i<argc;i++)
 			printf("%s ",args[i]);
 		printf("\n");
-		exit(EXIT_SUCCESS);
 	}
+//	exit(EXIT_SUCCESS);
 	return 0;
-
 }
 

@@ -17,7 +17,6 @@ int printprompt(char * startwd)
 	// to print < username @hostname : current directory >~
 	
 	// buffer : hostname
-	fore=-1;
 	char buffer[LIMIT];
 	gethostname(buffer,LIMIT-1);
 	
