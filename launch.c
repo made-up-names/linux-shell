@@ -14,6 +14,7 @@
 #include"shell.h"
 int launch(int argc,char* args[],int fg)
 {
+	
 	pid_t pid,w;
 	int wstatus;
 	pid=fork();
@@ -35,7 +36,10 @@ int launch(int argc,char* args[],int fg)
 		else if(strcmp(args[0],"clock")==0)
 			exitstatus=lclock(argc,args);
 		else if(execvp(args[0],args)==-1)
+		{
 			perror("bash:execution error");
+			//exit(EXIT_FAILURE);
+		}
 	}
 	else if(pid<0)
 		perror("bash:fork error");
@@ -49,16 +53,23 @@ int launch(int argc,char* args[],int fg)
 				w=waitpid(pid,&wstatus,WUNTRACED|WCONTINUED); 
 				if(w<0)
 					perror("waitpid");
-				/*if (WIFEXITED(wstatus)) {
+				if (WIFEXITED(wstatus))
+				{
 					printf("exited, status=%d\n", WEXITSTATUS(wstatus));
-				} else if (WIFSIGNALED(wstatus)) {
-					printf("killed by signal %d\n", WTERMSIG(wstatus));
-				} else if (WIFSTOPPED(wstatus)) {
+				//	printf("in launch here\n");
+				} 
+				else if (WIFSIGNALED(wstatus))
+				{
+				printf("killed by signal %d\n", WTERMSIG(wstatus));
+				}
+				else if (WIFSTOPPED(wstatus)) 
+				{
 					printf("stopped by signal %d\n", WSTOPSIG(wstatus));
-				} else if (WIFCONTINUED(wstatus)) {
+				}
+				else if (WIFCONTINUED(wstatus))
+				{
 					printf("continued\n");
-
-				}*/
+				}
 			}
 			while(!WIFEXITED(wstatus)&&!WIFSIGNALED(wstatus));//foreground
 
