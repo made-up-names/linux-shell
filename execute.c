@@ -18,7 +18,7 @@ int execute(int argc,char* args[],int fg)
 		return 0;
 	int exitstatus=0;
 	
-	if(strcmp(args[0],"quit")==0||strcmp(args[0],"exit")==0)
+	if(strcmp(args[0],"quit")==0)
 		exit(EXIT_SUCCESS);
 	else exitstatus=launch(argc,args,fg);
 	return exitstatus;
