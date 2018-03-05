@@ -17,8 +17,8 @@ int lsetenv(int argc,char* args[]);
 int lunsetenv(int argc,char* args[]);
 int jobs(int argc,char* args[]);
 int kjob(int argc,char* args[]);
-int bg(int argc,char* args[]);
-int fg(int argc,char* args[]);
+int bg1(int argc,char* args[]);
+int fg1(int argc,char* args[]);
 
 int launch(int argc,char* args[],int fg)
 {
@@ -28,6 +28,8 @@ int launch(int argc,char* args[],int fg)
 	pid=fork();
 	if(pid==0)
 	{
+		signal(SIGINT,SIG_DFL);
+		signal(SIGSTOP,SIG_DFL);
 		int exitstatus=0;
 		if(strcmp(args[0],"cd")==0)
 			exitstatus=cd(argc,args);
@@ -54,15 +56,15 @@ int launch(int argc,char* args[],int fg)
 		else if(strcmp(args[0],"overkill")==0)
 			exitstatus=kjob(argc,args);
 		else if(strcmp(args[0],"bg")==0)
-			exitstatus=bg(argc,args);
-		else if(Strcmp(args[0],"fg")==0)
-			exitstatus=fg(argc,args);
+			exitstatus=bg1(argc,args);
+		else if(strcmp(args[0],"fg")==0)
+			exitstatus=fg1(argc,args);
 		else if(execvp(args[0],args)==-1)
 		{
 			perror("bash:execution error");
 			exit(EXIT_FAILURE);
 		}
-		return exitstatus;
+		exit( exitstatus);
 	}
 	else if(pid<0)
 		perror("bash:fork error");
@@ -111,8 +113,9 @@ int launch(int argc,char* args[],int fg)
 				strcat(command," ");
 			}
 			strcpy(bg[pid],command);
+			printf("njobs before incrementing in launch%d\n",njobs);
 			njobs++;
-			jno[pid]=njobs;
+			jno[njobs]=pid;
 		}
 	}
 	return 0;
@@ -129,6 +132,7 @@ int lsetenv(int argc,char* args[])
 		err=setenv(args[1],"",1);
 	else
 		err=setenv(args[1],args[2],1);
+	printf("%s %s\n",args[1],getenv(args[1]));
 	if(err<0)
 	{
 		perror("Could not set the env variable");
@@ -159,19 +163,23 @@ int jobs(int argc,char* args[])
 	}
 	///think shreya think think think think think max
 	//i'm printing out the sorted order but if the order is changed the just write the no of process
-	for(int i=0;i<PIDLIMIT;i++)
+	for(int i=1;i<=njobs;i++)
 	{
-		if(bg[i]!=NULL)
+		if(jno[i]<0)
+			continue;
+		if(bg[jno[i]]!=NULL)
 		{
-			//printf("what the bullshit %s\n",bg[i]);
+			printf("what the bullshit %s\n",bg[jno[i]]);
+			printf("pid=%d,bg[pid]=%s\n",jno[i],bg[jno[i]]);
 			char procname[LIMIT];
-			sprintf(procname,"/proc/%d/stat",i);
+			sprintf(procname,"/proc/%d/stat",jno[i]);
 			int fd=open(procname,O_RDONLY);
 			if(fd<0)
 			{
 				//fprintf(stderr,"no such process exists\n");
-				free(bg[i]);
-				bg[i]=NULL;
+				jno[i]=-1;
+				free(bg[jno[i]]);
+				bg[jno[i]]=NULL;
 				close(fd);
 				continue;
 			}
@@ -180,7 +188,7 @@ int jobs(int argc,char* args[])
 			if(read(fd,readfile,LIMIT-1)<0)
 			{
 				strcpy(state,"could not get this process state\n");
-				printf("[%d] %s %s %d\n",jno[i],state,bg[i],i);
+				printf("[%d] %s %s %d\n",i,state,bg[jno[i]],jno[i]);
 
 			}
 			strtok(readfile," ");
@@ -190,82 +198,113 @@ int jobs(int argc,char* args[])
 				strcpy(state,"Stopped");
 			else
 				strcpy(state,"Running");
-			printf("[%d] %s %s %d\n",jno[i],state,bg[i],i);
+			printf("[%d] %s %s %d\n",i,state,bg[jno[i]],jno[i]);
 			close(fd);
 		}
 	}
+	int j=njobs;
+	while(j&&(jno[j]<0))
+		j--;
+	njobs=j;
+	printf("adsjfjskf\n");
 	return 0;
 }
 int kjob(int argc,char * args[])
 {
-	int flag=1;// kill all background process at once
-	int sig=-1;
-	int jno1=-1;
+	int exitstatus=0;
+	int flag=1;
 	if(strcmp(args[0],"kjob")==0)
 	{
-	if(argc!=3)
-	{
-		printf("Syntax error: kjob <job number>  <signo>\n");
-		return 1;
-	}
-	sig=atoi(args[2]);
-	jno1=atoi(args[1]);
+		if(argc!=3)
+		{
+			printf("Syntax error: kjob <job number> <signal no>\n");
+			return 1;
+		}
 		flag=0;
-	}
-	
-	else
-	{
-		if(argc!=1){
-		printf("Syntax error: overkill\n");
-		return 1;
+		int jno1=atoi(args[1]);
+		int sig=atoi(args[2]);
+		if(kill(jno[jno1],sig)<0)
+		{
+			perror("Error killing the job:");
+			exitstatus=1;
 		}
 	}
+	for(int i=1;i<=njobs;i++)
+	{
+		int pid=jno[i];
+		if(bg[pid]!=NULL)
+		{
 
-        for(int i=0;i<PIDLIMIT;i++)
-        {
-                if(bg[i]!=NULL)
-                {
-                        char procname[LIMIT];
-                        sprintf(procname,"/proc/%d/stat",i);
-                        int fd=open(procname,O_RDONLY);
-                        if(fd<0)
-                        {
-                                //fprintf(stderr,"no such process exists\n");
-                                free(bg[i]);
-                                bg[i]=NULL;
-                                close(fd);
-                                continue;
-                        }
-                        close(fd);
-			if(flag)
+			char procname[LIMIT];
+			sprintf(procname,"/proc/%d/stat",jno[i]);
+			int fd=open(procname,O_RDONLY);
+			if(fd<0)
 			{
-				if(kill(i,9)<0)
-					perror("Could not kill this bg process");
+				//fprintf(stderr,"no such process exists\n");
+				jno[i]=-1;
+				free(bg[jno[i]]);
+				bg[jno[i]]=NULL;
+				close(fd);
 				continue;
 			}
-			if(jno[i]!=jno1)
-			{	continue;
-			}
-			if(kill(i,sig)<0)
+			close(fd);
+			if(flag){
+			if(kill(pid,9)<0)
 			{
-				perror("invalid usage");
-				return 1;
-			}
-			else
-				return 0;
-               
-		 }
-        }
-	if(strcmp(args[0],"kjob")==0)
-	printf("no such job exists\n");	
-	
+				printf("pid=%d ",pid);
+				perror("Error killing this job:");
+				exitstatus=1;
+				continue;
+			}}
+		}
+	}
+	int j=njobs;
+	while(j&&(jno[j]<0))
+		j--;
+	njobs=j;
+	return exitstatus;
 }
-int bg(int argc,char* args[])
+int bg1(int argc,char* args[])
 {
 	if(argc!=2)
 	{
 		printf("Syntax error: bg <job>\n");
 		return 1;
 	}
+	int jno1=atoi(args[1]);
+	int pid=jno[jno1];
+	if(kill(pid,18)<0)
+	{
+		printf("pid=%d ",pid);
+		perror("Error continuing this job:");
+		return 1;
+	}
+	return 0;
+}
+int fg1(int argc,char* args[])
+{
+	if(argc!=2)
+	{
+		printf("Syntax error: fg <job no>\n");
+		return 1;
+	}
+	int jno1=atoi(args[1]);
+	int pid=jno[jno1];
+	if(kill(pid,18)<0)
+	{
+		printf("pid=%d ",pid);
+		perror("Error continuing this job:");
+	}
+	int status;
+	printf("%d\n",pid);
+	if(waitpid(pid,&status,WUNTRACED)<0)
+	{
+	perror("Not able to execute the command");
+	return 1;
+	}
+	//bring the damn thing to the front
+	
+	free(bg[pid]);
+	bg[pid]=NULL;
 	return 0;
 }

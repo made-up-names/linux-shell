@@ -21,7 +21,8 @@ int main()
 		bg[i]=NULL;
 	getcwd(startwd,LIMIT); // ~ directory : startwd
 	signal(SIGCHLD,exithandler); //exit handler for bg processes
-
+	signal(SIGINT,SIG_IGN);
+	signal(SIGSTOP,SIG_IGN);
 	int njobs=0;
 	char input[LIMIT];
 	while(1)
@@ -187,12 +188,12 @@ int executewithpipes(char* command)
 				readfd=pipefd[0];
 			}
 			else
-				writefd=dup(stdout_copy);
-		}
+			writefd=dup(stdout_copy);
 		int dup2er=dup2(writefd,1);
 		if(dup2er<0)
 			perror("Error output redirecting in pipes ");
 		close(writefd);
+		}
 
 		//for input output redirection in the pipe commands (irrelevant right now)
 		redirectIO(inputredir,outputredir,isappend);
