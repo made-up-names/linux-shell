@@ -13,6 +13,51 @@
 #include<signal.h>
 #include<fcntl.h>
 #include"shell.h"
+
+
+void ctrlchandler(int sig)
+{
+	printf("\n");
+	if(fore>0)
+		kill(fore,SIGTERM);
+	//signal(SIGCHLD,exithandler);
+	printprompt(startwd);
+	fflush(stdout);
+}
+void ctrlzhandler(int sig)
+{
+	printf("\n");
+	printf("fore=%d\n",fore);
+	if(fore<0)
+	{
+	printf("dsdjj\n");
+	}
+
+	char exelink[LIMIT] = "";
+	char exepath[LIMIT] = "";
+	sprintf(exelink,"/proc/%d/exe",fore);
+	int exepathsize = readlink(exelink, exepath, LIMIT - 1);
+	exepath[exepathsize] = '\0';
+
+	if(fore>0)
+	{
+		bg[fore]=(char*)malloc(LIMIT*sizeof(char));
+	strcpy(bg[fore],exepath);
+	}
+	printf("pid=%d,exelink=%s\n",fore,exelink);
+	if(fore>0)
+	{
+		printf("fore=%d\n",fore);
+		kill(fore,SIGTSTP);
+	}
+	//signal(SIGCHLD,exithandler);
+	printprompt(startwd);
+	fflush(stdout);
+}
+
+
+
+
 void exithandler(int sig)
 {
 	//for all ids in bg <bg size
