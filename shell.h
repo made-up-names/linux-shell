@@ -6,7 +6,7 @@ int launch(int argc,char* args[],int fg);
 int printprompt(char * startwd);
 int scaninput(char* input,int inputsize);
 int inputsplit(char * input,char * commands[],char* delimiter,int* fg);
-int parsecommand(char* command,char* args[]);
+int parsecommand(char* command,char* args[],char * inputredir, char* outputredir,int* isappend);
 int execute(int argc,char* args[],int fg);
 int cd(int argc,char* args[]);
 int pwd(char* args[]);
