@@ -22,6 +22,7 @@ int main()
 	getcwd(startwd,LIMIT); // ~ directory : startwd
 	signal(SIGCHLD,exithandler); //exit handler for bg processes
 
+	int njobs=0;
 	char input[LIMIT];
 	while(1)
 	{
@@ -44,31 +45,31 @@ int main()
 
 		int stdin_copy=dup(0);
 		int stdout_copy=dup(1);
-		
+
 		for(int i=0;i<noofcommands;i++)
 		{
 			// if pipe exists in the command execute with pipe else break into args
-		//	if(strchr(commands[i],'|')!=NULL)
-		//	{
-				executewithpipes(commands[i]);
-				continue;
-		//	}
-			char* args[LMT2]; 
-			char inputredir[LIMIT]="\0";
-			char outputredir[LIMIT]="\0";
-			int isappend=0;
-			int noofargs=parsecommand(commands[i],args,inputredir,outputredir,&isappend); //args are malloced 
-			redirectIO(inputredir,outputredir,isappend);
-			execute(noofargs,args,fg[i]);
-			for(int j=0;j<noofargs;j++)
-			{
+				if(strchr(commands[i],'|')!=NULL)
+				{
+			executewithpipes(commands[i]);
+			continue;
+				}
+				char* args[LMT2]; 
+				char inputredir[LIMIT]="\0";
+				char outputredir[LIMIT]="\0";
+				int isappend=0;
+				int noofargs=parsecommand(commands[i],args,inputredir,outputredir,&isappend); //args are malloced 
+				redirectIO(inputredir,outputredir,isappend);
+				execute(noofargs,args,fg[i]);
+				for(int j=0;j<noofargs;j++)
+				{
 				if(args[j])
-					free(args[j]);
+				free(args[j]);
 				args[j]=NULL;
-			}
+				}
 
-			dup2(stdin_copy,0);
-			dup2(stdout_copy,1);
+				dup2(stdin_copy,0);
+				dup2(stdout_copy,1);
 
 		}
 		for(int i=0;i<noofcommands;i++)
@@ -89,6 +90,7 @@ int redirectIO(char* inputredir,char* outputredir,int isappend)
 	// error otherwise
 	if(strcmp(inputredir,"\0")!=0)
 	{
+		printf("inside redirect should not happen\n");
 		int in=open(inputredir,O_RDONLY|O_CREAT);
 		if(in>=0)
 		{
@@ -106,6 +108,7 @@ int redirectIO(char* inputredir,char* outputredir,int isappend)
 	if(strcmp(outputredir,"\0")!=0)
 	{
 		int out;
+		printf("inside redirect should not happen\n");
 		if(isappend==1)
 			out=open(outputredir,O_WRONLY|O_CREAT|O_APPEND,0644);
 		else
@@ -144,64 +147,74 @@ int executewithpipes(char* command)
 
 	int stdin_copy=dup(0);
 	int stdout_copy=dup(1);
-	int pipefd[2];
-	int piperror=pipe(pipefd);
-	if(piperror<0)
-		perror("Unable to create pipes");
-	
+	int readfd=dup(stdin_copy);
+	int writefd=-1;
 	for(int i=0;i<noofpipecommands;i++)
 	{
+
 		char* args[LMT2]; 
-		char inputredir[LIMIT]="\0";
-		char outputredir[LIMIT]="\0";
+		char inputredir[LIMIT];
+		strcpy(inputredir,"\0");
+		char outputredir[LIMIT];
+		strcpy(outputredir,"\0");
 		int isappend=0;
-		int noofargs=parsecommand(pipedcommands[i],args,inputredir,outputredir,&isappend); //args are malloced 
-		
-		if(strcmp(inputredir,"\0")==0)
+		int noofargs=parsecommand(pipedcommands[i],args,inputredir,outputredir,&isappend); // break the command into args
+
+		// if conditions for input redirection are irrelevant right now
+		if( strcmp(inputredir,"\0")==0)
 		{
-			if(i!=0)
+			if(i)
 			{
-				int dup2er=dup2(pipefd[0],0);
+				int dup2er=dup2(readfd,0);
 				if(dup2er<0)
-					perror("Error input redirecting in pipes");
+					perror("Error input redirecting in pipes ");
+				close(readfd);
 			}
-			else
-				dup2(stdin_copy,0);
-				
+
 		}
 		if(strcmp(outputredir,"\0")==0)
 		{
 			if(i!=noofpipecommands-1)
 			{
-				int dup2er=dup2(pipefd[1],1);
-				if(dup2er<0)
-					perror("Error output redirecting in pipes");
+				int pipefd[2];
+				int piperror=pipe(pipefd);
+				if(piperror<0)
+				{
+					perror("Unable to create pipes");
+					continue;
+				}
+				writefd=pipefd[1];
+				readfd=pipefd[0];
 			}
 			else
-				dup2(stdout_copy,1);
+				writefd=dup(stdout_copy);
 		}
+		int dup2er=dup2(writefd,1);
+		if(dup2er<0)
+			perror("Error output redirecting in pipes ");
+		close(writefd);
+
+		//for input output redirection in the pipe commands (irrelevant right now)
 		redirectIO(inputredir,outputredir,isappend);
 		execute(noofargs,args,1);
-		if(i==1)
-			exit(1);
-		dup2(stdin_copy,0);
-		dup2(stdout_copy,1);
 		for(int j=0;j<noofargs;j++)
 		{
 			if(args[j])
 				free(args[j]);
 			args[j]=NULL;
 		}
+		dup2(stdin_copy,0);
+		dup2(stdout_copy,1);
 
 
 	}
-
-	
 	for(int i=0;i<noofpipecommands;i++)
 	{
 		if(pipedcommands[i])
 			free(pipedcommands[i]);
 		pipedcommands[i]=NULL;
 	}
+	close(stdout_copy);
+	close(stdin_copy);
 
 }

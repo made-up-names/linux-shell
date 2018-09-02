@@ -16,5 +16,8 @@ int lclock(int argc,char* args[]);
 char startwd[LIMIT];
 int pinfo(int argc,char* args[]);
 char* bg[PIDLIMIT];
+int jno[PIDLIMIT];
+int njobs;
 void exithandler(int sig);
 int remindme(int argc,char* args[]);
+
