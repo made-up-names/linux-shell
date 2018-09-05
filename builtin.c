@@ -54,9 +54,8 @@ int echo(char* args[])
 	{
 		if(args[i][0]!='$')
 			printf("%s ",args[i]);
-		else
-
-			printf("%s ",getenv(&args[i][1]));
+		else //if(getenv(&args[i][1]))
+			printf("$%s=%s ",&args[i][1],getenv(&args[i][1]));
 	
 	}
 	printf("\n");

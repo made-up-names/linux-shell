@@ -31,10 +31,19 @@ void exithandler(int sig)
 				fprintf(stderr,"exited with status=%d\n",WEXITSTATUS(wstatus));
 			else
 				fprintf(stderr,"exited normally\n");
-			jno[pid]=-1;
-			njobs--;
+			for(int i=1;i<=njobs;i++)
+			{
+				if(jno[i]==pid)
+					jno[i]=-1;
+			}
+			int j=njobs;
+			while(j>0 && (jno[j]<0))
+				j--;
+			njobs=j;
 			free(bg[pid]);
 			bg[pid]=NULL;
+			printf("file njobs=%d\n",njobs);
+			printf("pid%d,bg[pid]=%s\n",pid,bg[pid]);
 		}
 		else if (WIFSIGNALED(wstatus))
 		{
@@ -45,8 +54,16 @@ void exithandler(int sig)
 			sprintf(procname,"/proc/%d/status",pid);
 			if(open(procname,O_RDONLY)<0)	
 			{
-				jno[pid]=-1;
-				njobs--;
+				for(int i=1;i<=njobs;i++)
+				{
+					if(jno[i]==pid)
+						jno[i]=-1;
+				}
+				int j=njobs;
+				while(j>0 && (jno[j]<0))
+					j--;
+				njobs=j;
+				printf("file njobs=%d\n",njobs);
 				free(bg[pid]);
 				bg[pid]=NULL;
 			}
