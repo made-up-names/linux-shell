@@ -13,23 +13,29 @@
 #include<signal.h>
 #include <fcntl.h>
 #include"shell.h"
+
+
 int redirectIO(char* inputredir,char* outputredir,int isappend);
 int executewithpipes(char* command);
 int main()
 {
+	fore=-1;
 	for(int i=0;i<PIDLIMIT;i++)
 		bg[i]=NULL;
 	getcwd(startwd,LIMIT); // ~ directory : startwd
 	signal(SIGCHLD,exithandler); //exit handler for bg processes
-	signal(SIGINT,SIG_IGN);
-	signal(SIGSTOP,SIG_IGN);
+	signal(SIGINT,ctrlchandler);
+	signal(SIGTSTP,ctrlzhandler);
 	int njobs=0;
 	char input[LIMIT];
 	while(1)
 	{
 		printprompt(startwd);
 		scaninput(input,LIMIT);		
-
+		if(input==NULL)
+		{
+			continue;
+		}
 		// LIMIT is for strings or data arrays
 		// LMT2 is for pointer arrays
 

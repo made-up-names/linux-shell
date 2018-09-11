@@ -13,11 +13,23 @@ int pwd(char* args[]);
 int echo(char* args[]);
 int ls(int argc,char* args[]);
 int lclock(int argc,char* args[]);
-char startwd[LIMIT];
 int pinfo(int argc,char* args[]);
-char* bg[PIDLIMIT];
-int jno[PIDLIMIT];
-int njobs;
-void exithandler(int sig);
 int remindme(int argc,char* args[]);
 
+void exithandler(int sig);
+void ctrlchandler(int sig);
+void ctrlzhandler(int sig);
+
+
+extern char startwd[LIMIT];
+extern char* bg[PIDLIMIT];
+extern int jno[PIDLIMIT];
+extern int njobs;
+extern int fore;
+
+
+int njobs;
+int fore;
+int jno[PIDLIMIT];
+char* bg[PIDLIMIT];
+char startwd[LIMIT];
